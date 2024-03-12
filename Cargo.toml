@@ -9,11 +9,12 @@ edition = "2021"
 anyhow = "1.0"
 clap = "4.5"
 
-candle-transformers = {features = ["cuda"], version = "0.4"}
-candle-core = {features = ["cuda"], version = "0.4"}
-candle-nn = {features = ["cuda"], version = "0.4"}
-candle-examples = "0.4"
 
+candle-core = {features = ["cuda"], git = "https://github.com/huggingface/candle", branch = "main" }
+candle-transformers = {features = ["cuda"], git = "https://github.com/huggingface/candle", branch = "main" }
+candle-nn = {features = ["cuda"], git = "https://github.com/huggingface/candle", branch = "main" }
+
+serde_json = "1.0"
 hf-hub="0.3"
 tracing-subscriber="0.3"
 tracing-chrome="0.7"

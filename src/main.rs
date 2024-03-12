@@ -6,6 +6,7 @@ use candle_transformers::models::quantized_rwkv_v6::Model as Q6;
 use candle_transformers::models::rwkv_v5::{Config, Model as M5, State, Tokenizer};
 use candle_transformers::models::rwkv_v6::Model as M6;
 
+use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{DType, Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::generation::LogitsProcessor;
@@ -21,7 +22,7 @@ enum Model {
 }
 
 impl Model {
-    fn forward(&self, xs: &Tensor, state: &mut State) -> candle::Result<Tensor> {
+    fn forward(&self, xs: &Tensor, state: &mut State) -> candle_core::Result<Tensor> {
         match self {
             Self::M5(m) => m.forward(xs, state),
             Self::Q5(m) => m.forward(xs, state),
@@ -211,6 +212,28 @@ struct Args {
     repeat_last_n: usize,
 }
 
+pub fn device(cpu: bool) -> Result<Device> {
+    if cpu {
+        Ok(Device::Cpu)
+    } else if cuda_is_available() {
+        Ok(Device::new_cuda(0)?)
+    } else if metal_is_available() {
+        Ok(Device::new_metal(0)?)
+    } else {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            println!(
+                "Running on CPU, to run on GPU(metal), build this example with `--features metal`"
+            );
+        }
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            println!("Running on CPU, to run on GPU, build this example with `--features cuda`");
+        }
+        Ok(Device::Cpu)
+    }
+}
+
 fn main() -> Result<()> {
     use tracing_chrome::ChromeLayerBuilder;
     use tracing_subscriber::prelude::*;
@@ -225,10 +248,10 @@ fn main() -> Result<()> {
     };
     println!(
         "avx: {}, neon: {}, simd128: {}, f16c: {}",
-        candle::utils::with_avx(),
-        candle::utils::with_neon(),
-        candle::utils::with_simd128(),
-        candle::utils::with_f16c()
+        candle_core::utils::with_avx(),
+        candle_core::utils::with_neon(),
+        candle_core::utils::with_simd128(),
+        candle_core::utils::with_f16c()
     );
     println!(
         "temp: {:.2} repeat-penalty: {:.2} repeat-last-n: {}",
@@ -290,7 +313,7 @@ fn main() -> Result<()> {
 
     let start = std::time::Instant::now();
     let config: Config = serde_json::from_slice(&std::fs::read(config_filename)?)?;
-    let device = candle_examples::device(args.cpu)?;
+    let device = device(args.cpu)?;
     let model = if args.quantized {
         let filename = &filenames[0];
         let vb =
