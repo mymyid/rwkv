@@ -6,7 +6,7 @@ use candle_transformers::models::quantized_rwkv_v6::Model as Q6;
 use candle_transformers::models::rwkv_v5::{Config, Model as M5, State, Tokenizer};
 use candle_transformers::models::rwkv_v6::Model as M6;
 
-use candle::{DType, Device, Tensor};
+use candle_core::{DType, Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::generation::LogitsProcessor;
 use hf_hub::{api::sync::Api, Repo, RepoType};
